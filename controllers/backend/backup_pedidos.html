@@ -1,0 +1,153 @@
+<?php if ( ! defined('BASEPATH')) exit('Sin Accesos');
+class Pedidos extends CI_Controller
+{
+  public function __construct()
+  {
+    parent::__construct();
+  }
+  
+  public function index()
+  {
+    if (!$this->ion_auth->logged_in()):
+      redirect('backend/login', 'refresh');
+    endif;
+      $data['web_css']  = array(
+          array('href'=>'web/backend/js/jgrid/css/ui.jqgrid.css'),
+          array('href'=>'web/backend/js/jquery.gritter/css/jquery.gritter.css') 
+        );
+      $data['web_js']   = array(
+          array('src'=>'web/backend/js/jgrid/js/jquery.jqGrid.min.js'),
+          array('src'=>'web/backend/js/jgrid/js/i18n/grid.locale-en.js')
+        );
+      if($this->uri->segment(4)):
+        $data['id_producto'] = $datin = $this->uri->segment(4);
+      else:
+        $data['id_producto'] = $datin = 1;
+      endif;
+      $data['tabla'] = 'pedidos';
+      $data['info_producto'] = $this->egeneral_model->mostrar('productos',$datin);
+      $data['lista_categoria'] = $this->egeneral_model->listar('categorias',3);
+      $data['tpl'] = 'backend/pedidos/index';    
+      $this->load->view('backend/layout/layout', $data);
+    
+  }
+
+  /* Ver */ 
+
+  public function pedido_v($id)
+  {
+    if (!$this->ion_auth->logged_in()):
+      redirect('backend/login', 'refresh');
+    endif;
+
+     $data['web_js']  = array(
+                  array('src'=>'http://maps.google.com/maps/api/js?sensor=false'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.gears.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.silverlight.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.flash.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.browserplus.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.html4.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/plupload.html5.js'),
+                  array('src'=>'web/backend/recursos/uploadjs/jquery.ui.plupload/jquery.ui.plupload.js'),
+                  array('src'=>'web/backend/recursosubir.js')              
+          );
+
+      $data['web_css']  = array(
+                array('href'=>'web/backend/js/jquery.nanoscroller/nanoscroller.css'),
+                array('href'=>'web/backend/js/jquery.easypiechart/jquery.easy-pie-chart.css'),
+                array('href'=>'web/backend/js/bootstrap.switch/bootstrap-switch.css'),
+                array('href'=>'web/backend/js/bootstrap.datetimepicker/css/bootstrap-datetimepicker.min.css'),
+                array('href'=>'web/backend/js/jquery.select2/select2.css'),
+                array('href'=>'web/backend/js/bootstrap.slider/css/slider.css'),
+                array('href'=>'web/backend/js/jquery.gritter/css/jquery.gritter.css'),
+                array('href'=>'web/backend/jgrid/css/ui.jqgrid.css'),
+                array('href'=>'web/backend/js/jquery.icheck/skins/square/blue.css')
+          );
+      $data['datos'] = $this->egeneral_model->mostrar('cotizaciones',$id);
+      $data['tpl']   = 'backend/pedidos/ver';    
+      $this->load->view('backend/layout/layout', $data);
+  }
+
+  
+
+  function exportar($titulo,$tipo) // aumento el tipo, sólo para éste caso.
+  {
+    $busquedas = $this->input->get('q');
+    $data['titulo']  =  $titulo;
+    $data['tipo']    =  $tipo;
+    $data['listas']  =  $this->egeneral_model->exportar('cotizaciones',$busquedas);
+    $this->load->view('backend/pedidos/exportar', $data);
+  }
+
+  function borrar()
+  {
+      if (!$this->ion_auth->logged_in()):
+      //redirect them to the login page
+      redirect('backend/login', 'refresh');
+      endif;
+      $id = $this->input->post('id');
+      $this->egeneral_model->borrar('buzon',$id);
+      $this->output->set_output('1');
+  }
+
+
+  /* COmbos */ 
+
+  public function combo_subcategoria()
+    {
+        $options = "";
+        if($this->input->post('provincia')):        
+            $categoria = $this->input->post('provincia');
+            $seleccionado = $this->input->post('seleccionado');
+            $tipo = $this->input->post('tipo');
+            $localidades = $this->egeneral_model->getSubcategorias($categoria);
+            echo '<option value="">Seleccionar</option>';
+            foreach($localidades as $fila)
+            {
+              if(!$tipo):
+                if($seleccionado != 0 && $seleccionado == $fila->id):
+                echo '<option value="'.$fila->id.'" selected="selected">'.$fila->titulo.'</option>';
+                else:
+                echo '<option value="'.$fila->id.'">'.$fila->titulo.'</option>';
+                endif;
+              else:
+                if($seleccionado == $fila->categoria):
+                echo '<option value="'.$fila->id.'" selected="selected">'.$fila->titulo.'</option>';
+                else:
+                echo '<option value="'.$fila->id.'">'.$fila->titulo.'</option>';
+                endif;
+              endif;
+            }
+        endif;
+    }
+
+    public function combo_producto()
+    {
+        $options = "";
+        if($this->input->post('provincia')):        
+            $categoria = $this->input->post('provincia');
+            $seleccionado = $this->input->post('seleccionado');
+            $tipo = $this->input->post('tipo');
+            $localidades = $this->egeneral_model->getProductos($categoria);
+            echo '<option value="">Seleccionar</option>';
+            foreach($localidades as $fila)
+            {
+              if(!$tipo):
+                if($seleccionado != 0 && $seleccionado == $fila->id):
+                echo '<option value="'.$fila->id.'" selected="selected">'.$fila->titulo.'</option>';
+                else:
+                echo '<option value="'.$fila->id.'">'.$fila->titulo.'</option>';
+                endif;
+              else:
+                if($seleccionado == $fila->sub_categoria):
+                echo '<option value="backend/Pedidos/index/'.$fila->id.'" selected="selected">'.$fila->titulo.'</option>';
+                else:
+                echo '<option value="backend/Pedidos/index/'.$fila->id.'">'.$fila->titulo.'</option>';
+                endif;
+              endif;
+            }
+        endif;
+    }
+
+}
